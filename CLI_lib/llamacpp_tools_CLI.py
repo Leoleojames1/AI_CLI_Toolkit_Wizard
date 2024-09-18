@@ -11,7 +11,8 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Default path to llama.cpp directory
-DEFAULT_LLAMACPP_PATH = r"D:\CodingGit_StorageHDD\model_git\llama.cpp"
+MODEL_GIT_DIR = PROJECT_ROOT.parent
+DEFAULT_LLAMACPP_PATH = f"{MODEL_GIT_DIR}"
 
 def convert_safetensor_to_gguf(input_dir, model_name, output_dir, quant_type='q8_0', llamacpp_path=DEFAULT_LLAMACPP_PATH):
     """
