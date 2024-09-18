@@ -10,7 +10,7 @@ The AI CLI Toolkit Wizard is a comprehensive suite of tools that wraps around va
 
 ## 📚 Table of Contents
 
-- [🔧Installation](##installation)
+- [Installation](##installation)
 - [Features](##features)
 - [Usage](##usage)
   - [Wizard CLI](#wizard-cli)
