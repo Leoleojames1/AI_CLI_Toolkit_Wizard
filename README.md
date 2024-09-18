@@ -38,7 +38,7 @@ The AI CLI Toolkit Wizard is a comprehensive suite of tools that wraps around va
      conda activate ai_toolkit
      ```
 
-3. Install required packages:
+3. Install required packages in your model_git folder, to wrap and manage models:
    ```
    cd model_git/AI_CLI_Toolkit_Wizard
    pip install -r requirements.txt
