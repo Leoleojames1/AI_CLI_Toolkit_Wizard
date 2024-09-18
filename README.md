@@ -84,7 +84,7 @@ python llamacpp_tools_CLI.py convert --input_dir /path/to/model --model_name mod
 ```
 
 <p align="center">
-  <img src="docs/icons/llamacpp_panel.png" alt="LlamaCpp Panel" width="250"/>
+  <img src="docs/icons/llamacpp_panel.png" alt="LlamaCpp Panel" width="750"/>
 </p>
 
 ### Unsloth Training
@@ -96,7 +96,7 @@ python unsloth-cli-2.py train --model_name "your_model_path" --train_dataset "tr
 ```
 
 <p align="center">
-  <img src="docs/icons/unsloth_panel.png" alt="Unsloth Panel" width="250"/>
+  <img src="docs/icons/unsloth_panel.png" alt="Unsloth Panel" width="750"/>
 </p>
 
 ### Keystroke Macros
@@ -118,7 +118,7 @@ python HF_CLI.py push --local_path "./my_model" --repo_name "my-username/my-mode
 ```
 
 <p align="center">
-  <img src="docs/icons/hf_panel.png" alt="Hugging Face Panel" width="250"/>
+  <img src="docs/icons/hf_panel.png" alt="Hugging Face Panel" width="750"/>
 </p>
 
 ## 🔮 Future Modules
