@@ -10,7 +10,7 @@ The AI CLI Toolkit Wizard is a comprehensive suite of tools that wraps around va
 
 ## 📚 Table of Contents
 
-- [Installation](#installation)
+- [Installation](#Installation)
 - [Features](#features)
 - [Usage](#usage)
   - [Wizard CLI](#wizard-cli)
@@ -23,7 +23,7 @@ The AI CLI Toolkit Wizard is a comprehensive suite of tools that wraps around va
 - [Contributing](#contributing)
 - [License](#license)
 
-## 🔧 Installation
+## 🔧 ##Installation
 
 1. Clone the repository into your `model_git` folder:
    ```
