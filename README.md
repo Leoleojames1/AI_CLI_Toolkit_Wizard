@@ -60,7 +60,7 @@ The AI CLI Toolkit Wizard is a comprehensive suite of tools that wraps around va
 The Wizard CLI is your gateway to all the tools. Run it with:
 
 ```
-python CLI_wizard.py
+python CLI_wizard.py interactive
 ```
 
 Follow the interactive prompts to access different features.
