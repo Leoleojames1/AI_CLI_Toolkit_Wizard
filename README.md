@@ -10,15 +10,15 @@ The AI CLI Toolkit Wizard is a comprehensive suite of tools that wraps around va
 
 ## 📚 Table of Contents
 
-- [🔧Installation](##installation)
+- [Installation](##installation)
 - [Features](##features)
 - [Usage](##usage)
   - [Wizard CLI](#wizard-cli)
   - [Gradio Interface](#gradio-interface)
+  - [Hugging Face Hub Access](#hugging-face-hub-access)
   - [LlamaCpp GGUF Conversion](#llamacpp-gguf-conversion)
   - [Unsloth Training](#unsloth-training)
   - [Keystroke Macros](#keystroke-macros)
-  - [Hugging Face Hub Access](#hugging-face-hub-access)
 - [Future Modules](##future-modules)
 - [Contributing](##contributing)
 - [License](##license)
@@ -43,6 +43,10 @@ The AI CLI Toolkit Wizard is a comprehensive suite of tools that wraps around va
    cd model_git/AI_CLI_Toolkit_Wizard
    pip install -r requirements.txt
    ```
+
+<p align="center">
+  <img src="docs/icons/model_git_ex.png" alt="AI CLI Toolkit Wizard Logo" width="750"/>
+</p>
 
 ## ✨ Features
 
