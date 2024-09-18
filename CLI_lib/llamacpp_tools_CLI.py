@@ -22,7 +22,7 @@ def convert_safetensor_to_gguf(input_dir, model_name, output_dir, quant_type='q8
     """
     input_path = Path(input_dir) / model_name
     output_file = Path(output_dir) / f"{model_name}-{quant_type}.gguf"
-    converter_path = Path(llamacpp_path) / "convert_hf_to_gguf.py"
+    converter_path = Path(llamacpp_path) / "llama.cpp/convert_hf_to_gguf.py"
     
     print(f"Debug: Input path: {input_path}")
     print(f"Debug: Output file: {output_file}")
