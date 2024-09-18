@@ -11,6 +11,8 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Default path to llama.cpp directory
+SCRIPT_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = SCRIPT_DIR.parent
 MODEL_GIT_DIR = PROJECT_ROOT.parent
 DEFAULT_LLAMACPP_PATH = f"{MODEL_GIT_DIR}"
 

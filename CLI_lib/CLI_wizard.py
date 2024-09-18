@@ -43,7 +43,6 @@ logger = logging.getLogger(__name__)
 # Define paths
 SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent
-#TODO MAKE PARENT DIR
 MODEL_GIT_DIR = PROJECT_ROOT.parent
 MODEL_FORGE_DIR = PROJECT_ROOT / "model_forge"
 UNSLOTH_OUTPUT_DIR = MODEL_FORGE_DIR / "unsloth"
