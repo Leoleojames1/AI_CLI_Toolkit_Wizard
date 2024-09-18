@@ -75,6 +75,19 @@ python CLI_wizard.py gradio
 
 This will start a local web server, and you can access the interface through your browser. The Gradio interface provides easy-to-use forms and buttons for each tool, making it accessible even for those less comfortable with command-line interfaces.
 
+### Hugging Face Hub Access
+
+Interact with Hugging Face Hub:
+
+```
+python HF_CLI.py pull --model_name "bert-base-uncased"
+python HF_CLI.py push --local_path "./my_model" --repo_name "my-username/my-model"
+```
+
+<p align="center">
+  <img src="docs/icons/hf_panel.png" alt="Hugging Face Panel" width="1000"/>
+</p>
+
 ### LlamaCpp GGUF Conversion
 
 Convert models to GGUF format:
@@ -84,7 +97,7 @@ python llamacpp_tools_CLI.py convert --input_dir /path/to/model --model_name mod
 ```
 
 <p align="center">
-  <img src="docs/icons/llamacpp_panel.png" alt="LlamaCpp Panel" width="750"/>
+  <img src="docs/icons/llamacpp_panel.png" alt="LlamaCpp Panel" width="1000"/>
 </p>
 
 ### Unsloth Training
@@ -96,7 +109,7 @@ python unsloth-cli-2.py train --model_name "your_model_path" --train_dataset "tr
 ```
 
 <p align="center">
-  <img src="docs/icons/unsloth_panel.png" alt="Unsloth Panel" width="750"/>
+  <img src="docs/icons/unsloth_panel.png" alt="Unsloth Panel" width="1000"/>
 </p>
 
 ### Keystroke Macros
@@ -107,19 +120,6 @@ Create and run keystroke macros:
 python Keystrokes_CLI.py create "my_macro" --actions "mouse_move 100 100" "key_press a"
 python Keystrokes_CLI.py execute "my_macro"
 ```
-
-### Hugging Face Hub Access
-
-Interact with Hugging Face Hub:
-
-```
-python HF_CLI.py pull --model_name "bert-base-uncased"
-python HF_CLI.py push --local_path "./my_model" --repo_name "my-username/my-model"
-```
-
-<p align="center">
-  <img src="docs/icons/hf_panel.png" alt="Hugging Face Panel" width="750"/>
-</p>
 
 ## 🔮 Future Modules
 
