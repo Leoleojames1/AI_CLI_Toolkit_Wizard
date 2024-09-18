@@ -10,20 +10,20 @@ The AI CLI Toolkit Wizard is a comprehensive suite of tools that wraps around va
 
 ## 📚 Table of Contents
 
-- [Installation](#Installation)
-- [Features](#features)
-- [Usage](#usage)
+- [Installation](##installation)
+- [Features](##features)
+- [Usage](##usage)
   - [Wizard CLI](#wizard-cli)
   - [Gradio Interface](#gradio-interface)
   - [LlamaCpp GGUF Conversion](#llamacpp-gguf-conversion)
   - [Unsloth Training](#unsloth-training)
   - [Keystroke Macros](#keystroke-macros)
   - [Hugging Face Hub Access](#hugging-face-hub-access)
-- [Future Modules](#future-modules)
-- [Contributing](#contributing)
-- [License](#license)
+- [Future Modules](##future-modules)
+- [Contributing](##contributing)
+- [License](##license)
 
-## 🔧 ##Installation
+## 🔧 Installation
 
 1. Clone the repository into your `model_git` folder:
    ```
