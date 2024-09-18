@@ -44,6 +44,10 @@ The AI CLI Toolkit Wizard is a comprehensive suite of tools that wraps around va
    pip install -r requirements.txt
    ```
 
+<p align="center">
+  <img src="docs/icons/model_git_ex.png" alt="AI CLI Toolkit Wizard Logo" width="750"/>
+</p>
+
 ## ✨ Features
 
 - 🔄 LlamaCpp GGUF Conversion: Convert models to GGUF format for optimized inference
