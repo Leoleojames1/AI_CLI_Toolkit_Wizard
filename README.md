@@ -1,7 +1,7 @@
 # 🧙‍♂️ AI CLI Toolkit Wizard 🛠️
 
 <p align="center">
-  <img src="docs/icons/CLI_Wizard_poster.png" alt="AI CLI Toolkit Wizard Logo" width="250"/>
+  <img src="docs/icons/CLI_Wizard_poster.png" alt="AI CLI Toolkit Wizard Logo" width="500"/>
 </p>
 
 Welcome to AI_CLI_Toolkit_Wizard! This powerful set of command-line interface (CLI) tools is designed to streamline your AI model management and processing workflow. From model conversion to training, and from keystroke automation to Hugging Face Hub integration, we've got you covered! 🚀
@@ -10,18 +10,18 @@ The AI CLI Toolkit Wizard is a comprehensive suite of tools that wraps around va
 
 ## 📚 Table of Contents
 
-- [Installation](#installation)
-- [Features](#features)
-- [Usage](#usage)
+- [🔧Installation](##installation)
+- [Features](##features)
+- [Usage](##usage)
   - [Wizard CLI](#wizard-cli)
   - [Gradio Interface](#gradio-interface)
   - [LlamaCpp GGUF Conversion](#llamacpp-gguf-conversion)
   - [Unsloth Training](#unsloth-training)
   - [Keystroke Macros](#keystroke-macros)
   - [Hugging Face Hub Access](#hugging-face-hub-access)
-- [Future Modules](#future-modules)
-- [Contributing](#contributing)
-- [License](#license)
+- [Future Modules](##future-modules)
+- [Contributing](##contributing)
+- [License](##license)
 
 ## 🔧 Installation
 
@@ -38,7 +38,7 @@ The AI CLI Toolkit Wizard is a comprehensive suite of tools that wraps around va
      conda activate ai_toolkit
      ```
 
-3. Install required packages:
+3. Install required packages in your model_git folder, to wrap and manage models:
    ```
    cd model_git/AI_CLI_Toolkit_Wizard
    pip install -r requirements.txt
@@ -60,7 +60,7 @@ The AI CLI Toolkit Wizard is a comprehensive suite of tools that wraps around va
 The Wizard CLI is your gateway to all the tools. Run it with:
 
 ```
-python CLI_wizard.py
+python CLI_wizard.py interactive
 ```
 
 Follow the interactive prompts to access different features.
@@ -84,7 +84,7 @@ python llamacpp_tools_CLI.py convert --input_dir /path/to/model --model_name mod
 ```
 
 <p align="center">
-  <img src="docs/icons/llamacpp_panel.png" alt="LlamaCpp Panel" width="250"/>
+  <img src="docs/icons/llamacpp_panel.png" alt="LlamaCpp Panel" width="750"/>
 </p>
 
 ### Unsloth Training
@@ -96,7 +96,7 @@ python unsloth-cli-2.py train --model_name "your_model_path" --train_dataset "tr
 ```
 
 <p align="center">
-  <img src="docs/icons/unsloth_panel.png" alt="Unsloth Panel" width="250"/>
+  <img src="docs/icons/unsloth_panel.png" alt="Unsloth Panel" width="750"/>
 </p>
 
 ### Keystroke Macros
@@ -118,7 +118,7 @@ python HF_CLI.py push --local_path "./my_model" --repo_name "my-username/my-mode
 ```
 
 <p align="center">
-  <img src="docs/icons/hf_panel.png" alt="Hugging Face Panel" width="250"/>
+  <img src="docs/icons/hf_panel.png" alt="Hugging Face Panel" width="750"/>
 </p>
 
 ## 🔮 Future Modules
