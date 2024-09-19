@@ -1,7 +1,7 @@
 # 🧙‍♂️ AI CLI Toolkit Wizard 🛠️
 
 <p align="center">
-  <img src="docs/icons/CLI_Wizard_poster.png" alt="AI CLI Toolkit Wizard Logo" width="750"/>
+  <img src="docs/icons/wizard_CLI.png" alt="AI CLI Toolkit Wizard Logo" width="750"/>
 </p>
 
 Welcome to AI_CLI_Toolkit_Wizard! This powerful set of command-line interface (CLI) tools is designed to streamline your AI model management and processing workflow. From model conversion to training, and from keystroke automation to Hugging Face Hub integration, we've got you covered! 🚀
