@@ -1,7 +1,7 @@
 # 🧙‍♂️ AI CLI Toolkit Wizard 🛠️
 
 <p align="center">
-  <img src="docs/icons/CLI_Wizard_poster.png" alt="AI CLI Toolkit Wizard Logo" width="750"/>
+  <img src="docs/icons/wizard_CLI.png" alt="AI CLI Toolkit Wizard Logo" width="750"/>
 </p>
 
 Welcome to AI_CLI_Toolkit_Wizard! This powerful set of command-line interface (CLI) tools is designed to streamline your AI model management and processing workflow. From model conversion to training, and from keystroke automation to Hugging Face Hub integration, we've got you covered! 🚀
@@ -25,25 +25,35 @@ The AI CLI Toolkit Wizard is a comprehensive suite of tools that wraps around va
 
 ## 🔧 Installation
 
-1. Clone the repository into your `model_git` folder:
+0. Create a folder structure on your largest HDD or SDD for our model bank, replicate the following structure or atleast put everything we say in the model_git.
    ```
-   git clone https://github.com/yourusername/AI_CLI_Toolkit_Wizard.git model_git/AI_CLI_Toolkit_Wizard
+   D: or other Drive or linux home/git/model_git/
    ```
 
-2. Set up Miniconda (if not already installed):
+2. Clone the repository into your `model_git` folder as `model_git/AI_CLI_Toolkit_Wizard`:
+   ```
+   git clone https://github.com/Leoleojames1/AI_CLI_Toolkit_Wizard.git
+   ```
+
+3. Set up Miniconda (if not already installed):
    - Download and install Miniconda from [here](https://docs.conda.io/en/latest/miniconda.html)
    - Create a new environment:
      ```
-     conda create -n ai_toolkit python=3.9
-     conda activate ai_toolkit
+     conda create -n CLI_Toolkit python=3.11
+     conda activate CLI_Toolkit
      ```
 
-3. Install required packages in your model_git folder, to wrap and manage models:
+4. Install required packages in your model_git folder, to wrap and manage models:
    ```
-   cd model_git/AI_CLI_Toolkit_Wizard
+   cd AI_CLI_Toolkit_Wizard
    pip install -r requirements.txt
    ```
 
+5. Now install required llama.cpp in your model_git folder, to work with the CLI:
+   ```
+   git clone https://github.com/ggerganov/llama.cpp.git
+   ```
+   
 <p align="center">
   <img src="docs/icons/model_git_ex.png" alt="AI CLI Toolkit Wizard Logo" width="750"/>
 </p>
