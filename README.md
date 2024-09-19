@@ -27,7 +27,7 @@ The AI CLI Toolkit Wizard is a comprehensive suite of tools that wraps around va
 
 1. Clone the repository into your `model_git` folder:
    ```
-   git clone https://github.com/yourusername/AI_CLI_Toolkit_Wizard.git
+   git clone https://github.com/Leoleojames1/AI_CLI_Toolkit_Wizard.git
    ```
 
 2. Set up Miniconda (if not already installed):
