@@ -27,15 +27,15 @@ The AI CLI Toolkit Wizard is a comprehensive suite of tools that wraps around va
 
 1. Clone the repository into your `model_git` folder:
    ```
-   git clone https://github.com/yourusername/AI_CLI_Toolkit_Wizard.git model_git/AI_CLI_Toolkit_Wizard
+   git clone https://github.com/yourusername/AI_CLI_Toolkit_Wizard.git
    ```
 
 2. Set up Miniconda (if not already installed):
    - Download and install Miniconda from [here](https://docs.conda.io/en/latest/miniconda.html)
    - Create a new environment:
      ```
-     conda create -n ai_toolkit python=3.9
-     conda activate ai_toolkit
+     conda create -n ai_toolkit python=3.11
+     conda activate CLI_Toolkit
      ```
 
 3. Install required packages in your model_git folder, to wrap and manage models:
@@ -44,6 +44,11 @@ The AI CLI Toolkit Wizard is a comprehensive suite of tools that wraps around va
    pip install -r requirements.txt
    ```
 
+4. Now install required llama.cpp in your model_git folder, to work with the CLI:
+   ```
+   git clone https://github.com/ggerganov/llama.cpp.git
+   ```
+   
 <p align="center">
   <img src="docs/icons/model_git_ex.png" alt="AI CLI Toolkit Wizard Logo" width="750"/>
 </p>
