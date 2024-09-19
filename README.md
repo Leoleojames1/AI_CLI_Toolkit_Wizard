@@ -34,7 +34,7 @@ The AI CLI Toolkit Wizard is a comprehensive suite of tools that wraps around va
    - Download and install Miniconda from [here](https://docs.conda.io/en/latest/miniconda.html)
    - Create a new environment:
      ```
-     conda create -n ai_toolkit python=3.11
+     conda create -n CLI_Toolkit python=3.11
      conda activate CLI_Toolkit
      ```
 
