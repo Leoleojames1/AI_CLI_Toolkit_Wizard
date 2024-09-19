@@ -102,7 +102,7 @@ def run_unsloth(args):
     """
     logger.info(Fore.CYAN + f"🦥 Running Unsloth CLI for model: {args.model_name}" + Style.RESET_ALL)
     
-    unsloth_script = SCRIPT_DIR / "unsloth_CLI.py"
+    unsloth_script = SCRIPT_DIR / "unsloth-cli-2.py"
     unsloth_command = [
         sys.executable, str(unsloth_script),
         "train",
