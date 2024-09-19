@@ -25,7 +25,7 @@ The AI CLI Toolkit Wizard is a comprehensive suite of tools that wraps around va
 
 ## 🔧 Installation
 
-0. Create a folder structure on your largest HDD or SDD for our model bank, replicate the following structure or atleast put everything we say in the model_git.
+0. Create a folder structure on your largest HDD or SDD for our model bank, replicate the following structure or atleast put everything we say in the model_git. Note: model_git can be any folder name thats a valid name, the code path is not specific to the model_git name.
    ```
    D: or other Drive or linux home/git/model_git/
    ```
