@@ -47,7 +47,8 @@ def pull_model(args):
     """Pull a model from HuggingFace Hub"""
     logger.info(f"Pulling model {args.model_name} from HuggingFace Hub")
     try:
-        local_dir = MODEL_GIT_DIR / args.model_name
+        modeldir = args.model_name.split("/")[2]
+        local_dir = MODEL_GIT_DIR / modeldir
         snapshot_download(repo_id=args.model_name, local_dir=str(local_dir))
         logger.info(f"Model successfully downloaded to {local_dir}")
     except Exception as e:
