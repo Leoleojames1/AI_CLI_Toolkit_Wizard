@@ -4,9 +4,7 @@ from flask_socketio import SocketIO
 from flask_cors import CORS
 import json
 import numpy as np
-from mss import mss
-from PIL import Image
-import pytesseract
+from PIL import ImageGrab
 import cv2
 import ollama
 from ultralytics import YOLO
@@ -33,15 +31,13 @@ class Vision:
     def start_vision(self):
         logging.getLogger('ultralytics').setLevel(logging.WARNING)
         model = YOLO(self.model, task='detect')
-        sct = mss()
-        monitor = sct.monitors[1]
         labels = list(model.names.values())
     
         while True:
             label_count = {label: 0 for label in labels}
             label_dict = {label: [] for label in labels}
-            screen = np.array(sct.grab(monitor))
-            screen = screen[:, :, :3]
+            screen = np.array(ImageGrab.grab())
+            screen = cv2.cvtColor(screen, cv2.COLOR_RGB2BGR)
             results = model(screen)
 
             for result in results:
@@ -66,9 +62,6 @@ class Vision:
 
 class Api:
     def __init__(self):
-        self.sct = mss()
-        self.monitor = self.sct.monitors[1]
-        pytesseract.pytesseract.tesseract_cmd = r'C:/Program Files (x86)/Tesseract-OCR/tesseract.exe'
         ensure_dir("model_view_output/")
         
     def get_screen_labels(self):
@@ -81,35 +74,15 @@ class Api:
 
     def get_positions_from_label(self, label):
         try: 
-            with open(f"model_view_output/{label}.json", "r") as f:
+            with open(f"model_view_output/{key}.json", "r") as f:
                 coords_list = json.load(f)
             return coords_list
         except FileNotFoundError:
             return []
 
-    def read_image(self, coords=None, image=None):
-        if coords:
-            screen = np.array(self.sct.grab(self.monitor))
-            coords = [int(x) for x in coords]
-            x1, y1, x2, y2 = coords
-            try:
-               x1 = max(0, x1 - 5)
-               y1 = max(0, y1 - 5)
-               x2 = min(screen.shape[1], x2 + 5)
-               y2 = min(screen.shape[0], y2 + 5)
-            except:
-                pass
-            image = screen[y1:y2, x1:x2]
-            image = Image.fromarray(image)
-        
-        if image is not None:
-            text = pytesseract.image_to_string(image)
-            return text
-        return ""
-
     def get_screen_with_boxes(self):
-        screen = np.array(self.sct.grab(self.monitor))
-        screen = cv2.cvtColor(screen, cv2.COLOR_RGBA2RGB)
+        screen = np.array(ImageGrab.grab())
+        screen = cv2.cvtColor(screen, cv2.COLOR_RGB2BGR)
         
         labels = self.get_screen_labels()
         for label, count in labels.items():
@@ -125,7 +98,7 @@ class Api:
         return re.sub(r'[^\x00-\x7F]+', '', text)
 
     def updating_text(self, model):
-        model = YOLO(model, task='detect')  # Explicitly specify the task
+        model = YOLO(model, task='detect')
         labels = list(model.names.values())
 
         while True:
@@ -143,8 +116,8 @@ class Api:
         
             names = []
             for coords in coords_list:
-                names.append(self.read_image(coords=coords))
-        
+                names.append(f"Object at {coords}")  # Placeholder for OCR
+
             names = [name.replace('\n', '') for name in names]
             names = [self.remove_non_ascii(name) for name in names]
 
