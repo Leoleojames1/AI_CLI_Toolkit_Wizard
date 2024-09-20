@@ -13,6 +13,7 @@ import multiprocessing
 import logging
 import os
 import time
+import threading
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -22,11 +23,14 @@ def ensure_dir(file_path):
     directory = os.path.dirname(file_path)
     if not os.path.exists(directory):
         os.makedirs(directory)
-        
+
 class Vision:
     def __init__(self, model):
         self.model = model
         ensure_dir("model_view_output/")
+        self.screen = None
+        self.labels = {}
+        self.lock = threading.Lock()
         
     def start_vision(self):
         logging.getLogger('ultralytics').setLevel(logging.WARNING)
@@ -58,19 +62,34 @@ class Vision:
                 with open(file_path, "w") as f:
                     json.dump(label_count, f, indent=2)
             
-                time.sleep(0.1)
+            with self.lock:
+                self.screen = screen
+                self.labels = label_count
+
+            time.sleep(0.1)
 
 class Api:
-    def __init__(self):
+    def __init__(self, vision_instance):
         ensure_dir("model_view_output/")
-        
-    def get_screen_labels(self):
+        self.vision = vision_instance
+
+    def get_screen_with_boxes(self):
         try:
-            with open("model_view_output/labels.json", "r") as f:
-                labels = json.load(f)
-            return labels
-        except FileNotFoundError:
-            return {}
+            with self.vision.lock:
+                screen = self.vision.screen.copy()
+                labels = self.vision.labels.copy()
+            
+            for label, count in labels.items():
+                positions = self.get_positions_from_label(label)
+                for pos in positions:
+                    x1, y1, x2, y2 = map(int, pos)
+                    cv2.rectangle(screen, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                    cv2.putText(screen, f"{label}: {count}", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
+
+            return screen, labels
+        except Exception as e:
+            logging.error(f"Error in get_screen_with_boxes: {str(e)}")
+            return np.zeros((100, 100, 3), dtype=np.uint8), {}
 
     def get_positions_from_label(self, label):
         try: 
@@ -79,68 +98,6 @@ class Api:
             return coords_list
         except FileNotFoundError:
             return []
-
-    def get_screen_with_boxes(self):
-        try:
-            screen = np.array(ImageGrab.grab())
-            screen = cv2.cvtColor(screen, cv2.COLOR_RGB2BGR)
-            
-            labels = self.get_screen_labels()
-            for label, count in labels.items():
-                positions = self.get_positions_from_label(label)
-                for pos in positions:
-                    x1, y1, x2, y2 = map(int, pos)
-                    cv2.rectangle(screen, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                    cv2.putText(screen, f"{label}: {count}", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
-
-            return screen
-        except Exception as e:
-            logging.error(f"Error in get_screen_with_boxes: {str(e)}")
-            return np.zeros((100, 100, 3), dtype=np.uint8)  # Return a blank image in case of error
-
-    def remove_non_ascii(self, text):
-        return re.sub(r'[^\x00-\x7F]+', '', text)
-
-    def updating_text(self, model):
-        model = YOLO(model, task='detect')
-        labels = list(model.names.values())
-
-        while True:
-            file_path = "model_view_output/text.json"
-            ensure_dir(file_path)
-            if not os.path.exists(file_path) or os.path.getsize(file_path) == 0:
-                with open(file_path, "w") as f:
-                    json.dump([], f)
-            
-            with open(file_path, "r") as f:
-                try:
-                    coords_list = json.load(f)
-                except json.JSONDecodeError:
-                    coords_list = []
-        
-            names = []
-            for coords in coords_list:
-                names.append(f"Object at {coords}")  # Placeholder for OCR
-
-            names = [name.replace('\n', '') for name in names]
-            names = [self.remove_non_ascii(name) for name in names]
-
-            position_names = {text: [] for text in names}
-
-            for i, key in enumerate(names):
-                position_names[key] = coords_list[i]
-
-            with open("model_view_output/sumirize.json", "w") as f:
-                json.dump(position_names, f, indent=3)
-            time.sleep(1)
-
-api = Api()
-
-def get_labels():
-    return api.get_screen_labels()
-
-def get_screen_with_boxes():
-    return api.get_screen_with_boxes()
 
 def chat(message):
     try:
@@ -155,18 +112,12 @@ def chat(message):
         logging.error(f"Error in chat function: {str(e)}")
         return "Sorry, I encountered an error while processing your request."
 
-def start_vision_process(model):
-    vision_instance = Vision(model)
+def start_vision_process(vision_instance):
     vision_instance.start_vision()
 
-def start_updating(model):
-    api = Api()
-    api.updating_text(model=model)
-
-def update_screen():
+def update_screen(api_instance):
     try:
-        screen = get_screen_with_boxes()
-        labels = get_labels()
+        screen, labels = api_instance.get_screen_with_boxes()
         label_text = "\n".join([f"{label}: {count}" for label, count in labels.items()])
         return screen, label_text
     except Exception as e:
@@ -179,28 +130,38 @@ def gradio_chat(message, history):
     return "", history
 
 # Gradio Interface
-with gr.Blocks() as demo:
-    with gr.Row():
-        with gr.Column(scale=2):
-            image_output = gr.Image(label="Screen with Bounding Boxes")
-        with gr.Column(scale=1):
-            label_output = gr.Textbox(label="Detected Objects", lines=10)
-    
-    chatbot = gr.Chatbot()
-    msg = gr.Textbox()
-    clear = gr.Button("Clear")
+def create_gradio_interface(api_instance):
+    with gr.Blocks() as demo:
+        with gr.Row():
+            with gr.Column(scale=2):
+                image_output = gr.Image(label="Screen with Bounding Boxes")
+            with gr.Column(scale=1):
+                label_output = gr.Textbox(label="Detected Objects", lines=10)
+        
+        chatbot = gr.Chatbot()
+        msg = gr.Textbox()
+        clear = gr.Button("Clear")
 
-    msg.submit(gradio_chat, [msg, chatbot], [msg, chatbot])
-    clear.click(lambda: None, None, chatbot, queue=False)
+        msg.submit(gradio_chat, [msg, chatbot], [msg, chatbot])
+        clear.click(lambda: None, None, chatbot, queue=False)
 
-    demo.load(update_screen, outputs=[image_output, label_output])
+        def update_periodically():
+            screen, label_text = update_screen(api_instance)
+            return screen, label_text
+
+        demo.load(update_periodically, outputs=[image_output, label_output])
+        demo.add_periodic_callback(update_periodically, 1, outputs=[image_output, label_output])
+
+    return demo
 
 if __name__ == '__main__':
     vision_model = "Computer_Vision_1.3.0.onnx"  # Make sure this file exists
-    vision_process = multiprocessing.Process(target=start_vision_process, args=(vision_model,))
-    updating_process = multiprocessing.Process(target=start_updating, args=(vision_model,))
-    vision_process.start()
-    updating_process.start()
+    vision_instance = Vision(vision_model)
+    api_instance = Api(vision_instance)
     
+    vision_process = multiprocessing.Process(target=start_vision_process, args=(vision_instance,))
+    vision_process.start()
+    
+    demo = create_gradio_interface(api_instance)
     demo.queue()
     demo.launch(server_name="0.0.0.0", server_port=5000)
