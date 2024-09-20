@@ -1,5 +1,5 @@
 import gradio as gr
-from flask import Flask, jsonify, request, Response
+from flask import Flask
 from flask_socketio import SocketIO
 from flask_cors import CORS
 import json
@@ -8,15 +8,13 @@ from mss import mss
 from PIL import Image
 import pytesseract
 import cv2
-import base64
-import threading
-import time
 import ollama
 from ultralytics import YOLO
 import re
 import multiprocessing
 import logging
 import os
+import time
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -70,7 +68,7 @@ class Api:
     def __init__(self):
         self.sct = mss()
         self.monitor = self.sct.monitors[1]
-        pytesseract.pytesseract.tesseract_cmd = r'C:/Program Files (x86)/Tesseract-OCR/tesseract.exe'
+        pytesseract.pytesseract.tesseract_cmd = r'C:/Program Files/Tesseract-OCR/tesseract.exe'
         ensure_dir("model_view_output/")
         
     def get_screen_labels(self):
@@ -184,11 +182,11 @@ def start_updating(model):
     api = Api()
     api.updating_text(model=model)
 
-def update_screen(history):
+def update_screen():
     screen = get_screen_with_boxes()
     labels = get_labels()
     label_text = "\n".join([f"{label}: {count}" for label, count in labels.items()])
-    return screen, label_text, history
+    return screen, label_text
 
 def gradio_chat(message, history):
     response = chat(message)
@@ -210,8 +208,7 @@ with gr.Blocks() as demo:
     msg.submit(gradio_chat, [msg, chatbot], [msg, chatbot])
     clear.click(lambda: None, None, chatbot, queue=False)
 
-    demo.load(update_screen, outputs=[image_output, label_output, chatbot])
-    demo.add_periodic_callback(update_screen, 1, inputs=None, outputs=[image_output, label_output, chatbot])
+    demo.load(update_screen, outputs=[image_output, label_output])
 
 if __name__ == '__main__':
     vision_model = "Computer_Vision_1.3.0.onnx"  # Make sure this file exists

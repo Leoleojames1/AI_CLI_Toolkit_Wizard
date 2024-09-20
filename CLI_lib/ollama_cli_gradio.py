@@ -15,7 +15,7 @@ Key Features:
 Usage examples:
     python ollama_cli_gradio.py chat --model llama2
     python ollama_cli_gradio.py list-models
-    python ollama_cli_gradio.py --gradio
+    python ollama_cli_gradio.py gradio
 
 Customize this script by:
 1. Adding more Ollama-related commands
@@ -132,7 +132,7 @@ def create_gradio_interface():
 
 def create_cli_parser():
     parser = argparse.ArgumentParser(description="🤖 Ollama CLI-Gradio Chatbot")
-    parser.add_argument("--gradio", action="store_true", help="Run the Gradio interface")
+    parser.add_argument("gradio", action="store_true", help="Run the Gradio interface")
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
     
     chat_parser = subparsers.add_parser("chat", help="Chat with an Ollama model")
