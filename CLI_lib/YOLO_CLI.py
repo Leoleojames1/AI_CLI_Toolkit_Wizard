@@ -4,7 +4,7 @@ import numpy as np
 from PIL import ImageGrab
 import cv2
 import ollama
-import onnxruntime as ort
+from ultralytics import YOLO
 import multiprocessing
 import logging
 import os
@@ -25,10 +25,6 @@ class Vision:
         self.latest_results = None
         self.lock = threading.Lock()
         
-        # Set up ONNX Runtime session with CUDA
-        providers = ['CUDAExecutionProvider', 'CPUExecutionProvider']
-        self.ort_session = ort.InferenceSession(self.model, providers=providers)
-        
     def capture_screen(self):
         while True:
             screen = np.array(ImageGrab.grab())
@@ -38,31 +34,22 @@ class Vision:
             time.sleep(0.01)  # Capture at ~100 FPS
 
     def detect_objects(self):
-        input_name = self.ort_session.get_inputs()[0].name
+        logging.getLogger('ultralytics').setLevel(logging.WARNING)
+        model = YOLO(self.model, task='detect')
         while True:
             with self.lock:
                 if self.latest_frame is None:
                     continue
                 frame = self.latest_frame.copy()
             
-            input_image = cv2.resize(frame, (640, 640))
-            input_image = input_image.transpose(2, 0, 1)
-            input_image = np.expand_dims(input_image, 0).astype(np.float32) / 255.0
-
-            outputs = self.ort_session.run(None, {input_name: input_image})
+            results = model(frame)
             
-            # Process outputs (this part depends on your ONNX model's output format)
-            # You may need to adjust this based on your specific model
-            boxes = outputs[0]
-            scores = outputs[1]
-            class_ids = outputs[2]
-
             label_count = {}
             label_dict = {}
-            for box, score, class_id in zip(boxes[0], scores[0], class_ids[0]):
-                if score > 0.5:  # Confidence threshold
-                    label = f"Class_{int(class_id)}"  # Replace with actual class names if available
-                    coords = box.tolist()
+            for result in results:
+                for box in result.boxes:
+                    label = result.names[int(box.cls)]
+                    coords = box.xyxy[0].cpu().numpy().tolist()
                     label_count[label] = label_count.get(label, 0) + 1
                     if label not in label_dict:
                         label_dict[label] = []
