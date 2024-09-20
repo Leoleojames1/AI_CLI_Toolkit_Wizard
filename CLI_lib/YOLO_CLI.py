@@ -74,25 +74,29 @@ class Api:
 
     def get_positions_from_label(self, label):
         try: 
-            with open(f"model_view_output/{key}.json", "r") as f:
+            with open(f"model_view_output/{label}.json", "r") as f:
                 coords_list = json.load(f)
             return coords_list
         except FileNotFoundError:
             return []
 
     def get_screen_with_boxes(self):
-        screen = np.array(ImageGrab.grab())
-        screen = cv2.cvtColor(screen, cv2.COLOR_RGB2BGR)
-        
-        labels = self.get_screen_labels()
-        for label, count in labels.items():
-            positions = self.get_positions_from_label(label)
-            for pos in positions:
-                x1, y1, x2, y2 = map(int, pos)
-                cv2.rectangle(screen, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                cv2.putText(screen, f"{label}: {count}", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
+        try:
+            screen = np.array(ImageGrab.grab())
+            screen = cv2.cvtColor(screen, cv2.COLOR_RGB2BGR)
+            
+            labels = self.get_screen_labels()
+            for label, count in labels.items():
+                positions = self.get_positions_from_label(label)
+                for pos in positions:
+                    x1, y1, x2, y2 = map(int, pos)
+                    cv2.rectangle(screen, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                    cv2.putText(screen, f"{label}: {count}", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
 
-        return screen
+            return screen
+        except Exception as e:
+            logging.error(f"Error in get_screen_with_boxes: {str(e)}")
+            return np.zeros((100, 100, 3), dtype=np.uint8)  # Return a blank image in case of error
 
     def remove_non_ascii(self, text):
         return re.sub(r'[^\x00-\x7F]+', '', text)
@@ -139,13 +143,17 @@ def get_screen_with_boxes():
     return api.get_screen_with_boxes()
 
 def chat(message):
-    response = ollama.chat(model='llama3.1:8b', messages=[
-        {
-            'role': 'user',
-            'content': message,
-        },
-    ])
-    return response['message']['content']
+    try:
+        response = ollama.chat(model='llama3.1:8b', messages=[
+            {
+                'role': 'user',
+                'content': message,
+            },
+        ])
+        return response['message']['content']
+    except Exception as e:
+        logging.error(f"Error in chat function: {str(e)}")
+        return "Sorry, I encountered an error while processing your request."
 
 def start_vision_process(model):
     vision_instance = Vision(model)
@@ -156,10 +164,14 @@ def start_updating(model):
     api.updating_text(model=model)
 
 def update_screen():
-    screen = get_screen_with_boxes()
-    labels = get_labels()
-    label_text = "\n".join([f"{label}: {count}" for label, count in labels.items()])
-    return screen, label_text
+    try:
+        screen = get_screen_with_boxes()
+        labels = get_labels()
+        label_text = "\n".join([f"{label}: {count}" for label, count in labels.items()])
+        return screen, label_text
+    except Exception as e:
+        logging.error(f"Error in update_screen: {str(e)}")
+        return np.zeros((100, 100, 3), dtype=np.uint8), "Error occurred while updating screen"
 
 def gradio_chat(message, history):
     response = chat(message)
