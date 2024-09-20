@@ -14,6 +14,7 @@ import logging
 import os
 import time
 import queue
+import threading
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -141,14 +142,13 @@ def create_gradio_interface(api_instance):
         msg.submit(gradio_chat, [msg, chatbot], [msg, chatbot])
         clear.click(lambda: None, None, chatbot, queue=False)
 
-        def update_periodically():
+        def update_output():
             while True:
-                time.sleep(1)  # Update every second
                 screen, label_text = update_screen(api_instance)
                 yield screen, label_text
+                time.sleep(0.1)  # Adjust this value to control frame rate
 
-        demo.load(lambda: next(update_periodically()), outputs=[image_output, label_output])
-        demo.load(update_periodically, outputs=[image_output, label_output], every=1)
+        demo.add_generator(update_output, outputs=[image_output, label_output], every=1)
 
     return demo
 
