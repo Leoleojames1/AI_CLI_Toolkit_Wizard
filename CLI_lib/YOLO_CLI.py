@@ -13,7 +13,7 @@ import multiprocessing
 import logging
 import os
 import time
-import threading
+import queue
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -28,11 +28,8 @@ class Vision:
     def __init__(self, model):
         self.model = model
         ensure_dir("model_view_output/")
-        self.screen = None
-        self.labels = {}
-        self.lock = threading.Lock()
         
-    def start_vision(self):
+    def start_vision(self, queue):
         logging.getLogger('ultralytics').setLevel(logging.WARNING)
         model = YOLO(self.model, task='detect')
         labels = list(model.names.values())
@@ -62,22 +59,17 @@ class Vision:
                 with open(file_path, "w") as f:
                     json.dump(label_count, f, indent=2)
             
-            with self.lock:
-                self.screen = screen
-                self.labels = label_count
-
+            queue.put((screen, label_count))
             time.sleep(0.1)
 
 class Api:
-    def __init__(self, vision_instance):
+    def __init__(self, queue):
         ensure_dir("model_view_output/")
-        self.vision = vision_instance
+        self.queue = queue
 
     def get_screen_with_boxes(self):
         try:
-            with self.vision.lock:
-                screen = self.vision.screen.copy() if self.vision.screen is not None else np.zeros((100, 100, 3), dtype=np.uint8)
-                labels = self.vision.labels.copy()
+            screen, labels = self.queue.get(timeout=1)
             
             for label, count in labels.items():
                 positions = self.get_positions_from_label(label)
@@ -87,6 +79,9 @@ class Api:
                     cv2.putText(screen, f"{label}: {count}", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
 
             return screen, labels
+        except queue.Empty:
+            logging.warning("Queue is empty, returning default values")
+            return np.zeros((100, 100, 3), dtype=np.uint8), {}
         except Exception as e:
             logging.error(f"Error in get_screen_with_boxes: {str(e)}")
             return np.zeros((100, 100, 3), dtype=np.uint8), {}
@@ -112,8 +107,9 @@ def chat(message):
         logging.error(f"Error in chat function: {str(e)}")
         return "Sorry, I encountered an error while processing your request."
 
-def start_vision_process(vision_instance):
-    vision_instance.start_vision()
+def start_vision_process(model, queue):
+    vision_instance = Vision(model)
+    vision_instance.start_vision(queue)
 
 def update_screen(api_instance):
     try:
@@ -159,12 +155,13 @@ def create_gradio_interface(api_instance):
 if __name__ == '__main__':
     multiprocessing.freeze_support()  # Add this line for Windows support
     vision_model = "Computer_Vision_1.3.0.onnx"  # Make sure this file exists
-    vision_instance = Vision(vision_model)
     
-    vision_process = multiprocessing.Process(target=start_vision_process, args=(vision_instance,))
+    data_queue = multiprocessing.Queue()
+    
+    vision_process = multiprocessing.Process(target=start_vision_process, args=(vision_model, data_queue))
     vision_process.start()
     
-    api_instance = Api(vision_instance)
+    api_instance = Api(data_queue)
     
     demo = create_gradio_interface(api_instance)
     demo.queue()
