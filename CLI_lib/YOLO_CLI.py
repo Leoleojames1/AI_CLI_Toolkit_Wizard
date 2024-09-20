@@ -68,7 +68,7 @@ class Api:
     def __init__(self):
         self.sct = mss()
         self.monitor = self.sct.monitors[1]
-        pytesseract.pytesseract.tesseract_cmd = r'C:/Program Files/Tesseract-OCR/tesseract.exe'
+        pytesseract.pytesseract.tesseract_cmd = r'C:/Program Files (x86)/Tesseract-OCR/tesseract.exe'
         ensure_dir("model_view_output/")
         
     def get_screen_labels(self):
