@@ -28,11 +28,8 @@ class Vision:
     def __init__(self, model):
         self.model = model
         ensure_dir("model_view_output/")
-        self.screen = None
-        self.labels = {}
-        self.lock = threading.Lock()
         
-    def start_vision(self):
+    def start_vision(self, shared_dict):
         logging.getLogger('ultralytics').setLevel(logging.WARNING)
         model = YOLO(self.model, task='detect')
         labels = list(model.names.values())
@@ -62,22 +59,20 @@ class Vision:
                 with open(file_path, "w") as f:
                     json.dump(label_count, f, indent=2)
             
-            with self.lock:
-                self.screen = screen
-                self.labels = label_count
+            shared_dict['screen'] = screen
+            shared_dict['labels'] = label_count
 
             time.sleep(0.1)
 
 class Api:
-    def __init__(self, vision_instance):
+    def __init__(self, shared_dict):
         ensure_dir("model_view_output/")
-        self.vision = vision_instance
+        self.shared_dict = shared_dict
 
     def get_screen_with_boxes(self):
         try:
-            with self.vision.lock:
-                screen = self.vision.screen.copy()
-                labels = self.vision.labels.copy()
+            screen = self.shared_dict['screen'].copy()
+            labels = self.shared_dict['labels'].copy()
             
             for label, count in labels.items():
                 positions = self.get_positions_from_label(label)
@@ -112,8 +107,9 @@ def chat(message):
         logging.error(f"Error in chat function: {str(e)}")
         return "Sorry, I encountered an error while processing your request."
 
-def start_vision_process(vision_instance):
-    vision_instance.start_vision()
+def start_vision_process(model, shared_dict):
+    vision_instance = Vision(model)
+    vision_instance.start_vision(shared_dict)
 
 def update_screen(api_instance):
     try:
@@ -156,11 +152,13 @@ def create_gradio_interface(api_instance):
 
 if __name__ == '__main__':
     vision_model = "Computer_Vision_1.3.0.onnx"  # Make sure this file exists
-    vision_instance = Vision(vision_model)
-    api_instance = Api(vision_instance)
+    manager = multiprocessing.Manager()
+    shared_dict = manager.dict()
     
-    vision_process = multiprocessing.Process(target=start_vision_process, args=(vision_instance,))
+    vision_process = multiprocessing.Process(target=start_vision_process, args=(vision_model, shared_dict))
     vision_process.start()
+    
+    api_instance = Api(shared_dict)
     
     demo = create_gradio_interface(api_instance)
     demo.queue()

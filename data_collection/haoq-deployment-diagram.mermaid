@@ -1,0 +1,91 @@
+graph TD
+    A[Data Preprocessing] --> B[HAOQ Transformer Model]
+    B --> |Training| C[Model Training]
+    C --> D[Model Evaluation]
+    D --> |Metrics Meet Criteria| E[Model Deployment]
+    D --> |Metrics Don't Meet Criteria| C
+    E --> F[Inference Service]
+    
+    subgraph "HAOQ Transformer Model"
+        B1[Input Embedding]
+        B2[Query Decomposition]
+        B3[Orthogonal Projection]
+        B4[Local Attention]
+        B5[Global Attention]
+        B6[Query Fusion]
+        B7[Feed Forward]
+        B8[Output Layer]
+        
+        B1 --> B2
+        B2 --> B3
+        B3 --> B4
+        B3 --> B5
+        B4 --> B6
+        B5 --> B6
+        B6 --> B7
+        B7 --> B8
+    end
+    
+    subgraph "Model Training"
+        C1[DataLoader]
+        C2[Optimizer]
+        C3[Loss Function]
+        C4[Training Loop]
+        C5[Gradient Accumulation]
+        C6[Learning Rate Scheduler]
+        
+        C1 --> C4
+        C2 --> C4
+        C3 --> C4
+        C4 --> C5
+        C5 --> C4
+        C6 --> C4
+    end
+    
+    subgraph "Model Evaluation"
+        D1[Validation DataLoader]
+        D2[Evaluation Metrics]
+        D3[Long-range Dependency Tests]
+        D4[Computational Efficiency Benchmarks]
+        
+        D1 --> D2
+        D2 --> D3
+        D2 --> D4
+    end
+    
+    subgraph "Model Deployment"
+        E1[Model Serialization]
+        E2[Deployment Configuration]
+        E3[CI/CD Pipeline]
+        E4[Monitoring Setup]
+        
+        E1 --> E2
+        E2 --> E3
+        E3 --> E4
+    end
+    
+    subgraph "Inference Service"
+        F1[API Endpoints]
+        F2[Load Balancer]
+        F3[Inference Servers]
+        F4[Caching Layer]
+        F5[Monitoring & Logging]
+        
+        F1 --> F2
+        F2 --> F3
+        F3 --> F4
+        F3 --> F5
+    end
+    
+    G[Continuous Monitoring & Improvement] --> A
+    G --> C
+    G --> D
+    G --> E
+    G --> F
+
+style B fill:#f9f,stroke:#333,stroke-width:4px
+style C fill:#bbf,stroke:#333,stroke-width:3px
+style D fill:#bfb,stroke:#333,stroke-width:3px
+style E fill:#fbf,stroke:#333,stroke-width:3px
+style F fill:#ff9,stroke:#333,stroke-width:3px
+style G fill:#f96,stroke:#333,stroke-width:4px
