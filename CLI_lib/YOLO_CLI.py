@@ -5,12 +5,12 @@ from PIL import ImageGrab
 import cv2
 import ollama
 from ultralytics import YOLO
-import re
 import multiprocessing
 import logging
 import os
 import time
 import queue
+import threading
 
 def ensure_dir(file_path):
     directory = os.path.dirname(file_path)
@@ -21,71 +21,71 @@ class Vision:
     def __init__(self, model):
         self.model = model
         ensure_dir("model_view_output/")
+        self.latest_frame = None
+        self.latest_results = None
+        self.lock = threading.Lock()
         
-    def start_vision(self, queue):
-        logging.getLogger('ultralytics').setLevel(logging.WARNING)
-        model = YOLO(self.model, task='detect')
-        labels = list(model.names.values())
-    
+    def capture_screen(self):
         while True:
-            label_count = {label: 0 for label in labels}
-            label_dict = {label: [] for label in labels}
             screen = np.array(ImageGrab.grab())
             screen = cv2.cvtColor(screen, cv2.COLOR_RGB2BGR)
-            results = model(screen)
+            with self.lock:
+                self.latest_frame = screen
+            time.sleep(0.01)  # Capture at ~100 FPS
 
+    def detect_objects(self):
+        logging.getLogger('ultralytics').setLevel(logging.WARNING)
+        model = YOLO(self.model, task='detect')
+        model.to('cuda')  # Use GPU
+        while True:
+            with self.lock:
+                if self.latest_frame is None:
+                    continue
+                frame = self.latest_frame.copy()
+            
+            results = model(frame, stream=True)  # Enable streaming mode for faster inference
+            
+            label_count = {}
+            label_dict = {}
             for result in results:
                 for box in result.boxes:
-                    label = model.names[int(box.cls)]  
-                    coords = box.xyxy[0].tolist()
-                    label_count[label] += 1
+                    label = model.names[int(box.cls)]
+                    coords = box.xyxy[0].cpu().numpy().tolist()
+                    label_count[label] = label_count.get(label, 0) + 1
+                    if label not in label_dict:
+                        label_dict[label] = []
                     label_dict[label].append(coords)
 
-                for key in label_dict:
-                    file_path = f"model_view_output/{key}.json"
-                    ensure_dir(file_path)
-                    with open(file_path, "w") as f:
-                        json.dump(label_dict[key], f, indent=4)
+            with self.lock:
+                self.latest_results = (label_count, label_dict)
 
-                file_path = "model_view_output/labels.json"
-                ensure_dir(file_path)
-                with open(file_path, "w") as f:
-                    json.dump(label_count, f, indent=2)
-            
-            queue.put((screen, label_count))
-            time.sleep(0.1)
+            time.sleep(0.1)  # Detect at ~10 FPS
+
+    def start_vision(self):
+        capture_thread = threading.Thread(target=self.capture_screen)
+        detect_thread = threading.Thread(target=self.detect_objects)
+        capture_thread.start()
+        detect_thread.start()
 
 class Api:
-    def __init__(self, queue):
-        ensure_dir("model_view_output/")
-        self.queue = queue
+    def __init__(self, vision_instance):
+        self.vision = vision_instance
 
     def get_screen_with_boxes(self):
-        try:
-            screen, labels = self.queue.get(timeout=1)
+        with self.vision.lock:
+            if self.vision.latest_frame is None or self.vision.latest_results is None:
+                return np.zeros((100, 100, 3), dtype=np.uint8), {}
             
-            for label, count in labels.items():
-                positions = self.get_positions_from_label(label)
-                for pos in positions:
-                    x1, y1, x2, y2 = map(int, pos)
-                    cv2.rectangle(screen, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                    cv2.putText(screen, f"{label}: {count}", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
+            frame = self.vision.latest_frame.copy()
+            label_count, label_dict = self.vision.latest_results
 
-            return screen, labels
-        except queue.Empty:
-            logging.warning("Queue is empty, returning default values")
-            return np.zeros((100, 100, 3), dtype=np.uint8), {}
-        except Exception as e:
-            logging.error(f"Error in get_screen_with_boxes: {str(e)}")
-            return np.zeros((100, 100, 3), dtype=np.uint8), {}
+        for label, positions in label_dict.items():
+            for pos in positions:
+                x1, y1, x2, y2 = map(int, pos)
+                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                cv2.putText(frame, f"{label}: {label_count[label]}", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
 
-    def get_positions_from_label(self, label):
-        try: 
-            with open(f"model_view_output/{label}.json", "r") as f:
-                coords_list = json.load(f)
-            return coords_list
-        except FileNotFoundError:
-            return []
+        return frame, label_count
 
 def chat(message):
     try:
@@ -99,10 +99,6 @@ def chat(message):
     except Exception as e:
         logging.error(f"Error in chat function: {str(e)}")
         return "Sorry, I encountered an error while processing your request."
-
-def start_vision_process(model, queue):
-    vision_instance = Vision(model)
-    vision_instance.start_vision(queue)
 
 def update_screen(api_instance):
     try:
@@ -138,7 +134,7 @@ def create_gradio_interface(api_instance):
         msg.submit(gradio_chat, [msg, chatbot], [msg, chatbot])
         clear.click(lambda: None, None, chatbot, queue=False)
 
-        demo.load(update_output, outputs=[image_output, label_output], every=1)
+        demo.load(update_output, outputs=[image_output, label_output], every=0.1)
 
     return demo
 
@@ -146,12 +142,10 @@ if __name__ == '__main__':
     multiprocessing.freeze_support()  # Add this line for Windows support
     vision_model = "Computer_Vision_1.3.0.onnx"  # Make sure this file exists
     
-    data_queue = multiprocessing.Queue()
+    vision_instance = Vision(vision_model)
+    vision_instance.start_vision()
     
-    vision_process = multiprocessing.Process(target=start_vision_process, args=(vision_model, data_queue))
-    vision_process.start()
-    
-    api_instance = Api(data_queue)
+    api_instance = Api(vision_instance)
     
     demo = create_gradio_interface(api_instance)
     demo.queue()
