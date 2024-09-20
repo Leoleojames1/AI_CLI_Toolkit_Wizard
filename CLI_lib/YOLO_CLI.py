@@ -28,8 +28,11 @@ class Vision:
     def __init__(self, model):
         self.model = model
         ensure_dir("model_view_output/")
+        self.screen = None
+        self.labels = {}
+        self.lock = threading.Lock()
         
-    def start_vision(self, shared_dict):
+    def start_vision(self):
         logging.getLogger('ultralytics').setLevel(logging.WARNING)
         model = YOLO(self.model, task='detect')
         labels = list(model.names.values())
@@ -59,20 +62,22 @@ class Vision:
                 with open(file_path, "w") as f:
                     json.dump(label_count, f, indent=2)
             
-            shared_dict['screen'] = screen
-            shared_dict['labels'] = label_count
+            with self.lock:
+                self.screen = screen
+                self.labels = label_count
 
             time.sleep(0.1)
 
 class Api:
-    def __init__(self, shared_dict):
+    def __init__(self, vision_instance):
         ensure_dir("model_view_output/")
-        self.shared_dict = shared_dict
+        self.vision = vision_instance
 
     def get_screen_with_boxes(self):
         try:
-            screen = self.shared_dict['screen'].copy()
-            labels = self.shared_dict['labels'].copy()
+            with self.vision.lock:
+                screen = self.vision.screen.copy() if self.vision.screen is not None else np.zeros((100, 100, 3), dtype=np.uint8)
+                labels = self.vision.labels.copy()
             
             for label, count in labels.items():
                 positions = self.get_positions_from_label(label)
@@ -107,9 +112,8 @@ def chat(message):
         logging.error(f"Error in chat function: {str(e)}")
         return "Sorry, I encountered an error while processing your request."
 
-def start_vision_process(model, shared_dict):
-    vision_instance = Vision(model)
-    vision_instance.start_vision(shared_dict)
+def start_vision_process(vision_instance):
+    vision_instance.start_vision()
 
 def update_screen(api_instance):
     try:
@@ -142,23 +146,25 @@ def create_gradio_interface(api_instance):
         clear.click(lambda: None, None, chatbot, queue=False)
 
         def update_periodically():
-            screen, label_text = update_screen(api_instance)
-            return screen, label_text
+            while True:
+                time.sleep(1)  # Update every second
+                screen, label_text = update_screen(api_instance)
+                yield screen, label_text
 
-        demo.load(update_periodically, outputs=[image_output, label_output])
-        demo.add_periodic_callback(update_periodically, 1, outputs=[image_output, label_output])
+        demo.load(lambda: next(update_periodically()), outputs=[image_output, label_output])
+        demo.load(update_periodically, outputs=[image_output, label_output], every=1)
 
     return demo
 
 if __name__ == '__main__':
+    multiprocessing.freeze_support()  # Add this line for Windows support
     vision_model = "Computer_Vision_1.3.0.onnx"  # Make sure this file exists
-    manager = multiprocessing.Manager()
-    shared_dict = manager.dict()
+    vision_instance = Vision(vision_model)
     
-    vision_process = multiprocessing.Process(target=start_vision_process, args=(vision_model, shared_dict))
+    vision_process = multiprocessing.Process(target=start_vision_process, args=(vision_instance,))
     vision_process.start()
     
-    api_instance = Api(shared_dict)
+    api_instance = Api(vision_instance)
     
     demo = create_gradio_interface(api_instance)
     demo.queue()
