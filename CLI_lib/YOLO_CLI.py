@@ -1,7 +1,4 @@
 import gradio as gr
-from flask import Flask
-from flask_socketio import SocketIO
-from flask_cors import CORS
 import json
 import numpy as np
 from PIL import ImageGrab
@@ -14,11 +11,6 @@ import logging
 import os
 import time
 import queue
-import threading
-
-app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}})
-socketio = SocketIO(app, cors_allowed_origins="*")
 
 def ensure_dir(file_path):
     directory = os.path.dirname(file_path)
@@ -128,6 +120,10 @@ def gradio_chat(message, history):
 
 # Gradio Interface
 def create_gradio_interface(api_instance):
+    def update_output():
+        screen, label_text = update_screen(api_instance)
+        return screen, label_text
+
     with gr.Blocks() as demo:
         with gr.Row():
             with gr.Column(scale=2):
@@ -142,13 +138,7 @@ def create_gradio_interface(api_instance):
         msg.submit(gradio_chat, [msg, chatbot], [msg, chatbot])
         clear.click(lambda: None, None, chatbot, queue=False)
 
-        def update_output():
-            while True:
-                screen, label_text = update_screen(api_instance)
-                yield screen, label_text
-                time.sleep(0.1)  # Adjust this value to control frame rate
-
-        demo.add_generator(update_output, outputs=[image_output, label_output], every=1)
+        demo.load(update_output, outputs=[image_output, label_output], every=1)
 
     return demo
 
