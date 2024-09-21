@@ -6,17 +6,15 @@
 This script provides a command-line interface (CLI) and a Gradio web interface for merging language models using the mergekit library.
 
 Key Features:
-1. Multiple merge methods: SLERP, TIES, DARE, and Passthrough
-2. CLI with subcommands for each merge method
+1. Multiple merge methods: Linear, SLERP, Task Arithmetic, TIES, DARE, Passthrough, Model Breadcrumbs, Model Stock, DELLA
+2. CLI with subcommands for merging and LoRA extraction
 3. Gradio interface for web-based interaction
 4. Flexible configuration options for each merge method
 
 Usage examples:
-    python mergekit_cli_gradio.py slerp --model1 path/to/model1 --model2 path/to/model2 --t 0.5
-    python mergekit_cli_gradio.py ties --models path/to/model1 path/to/model2 --densities 0.5 0.5 --weights 0.5 0.5
-    python mergekit_cli_gradio.py dare --models path/to/model1 path/to/model2 --densities 0.5 0.5 --weights 0.4 0.6
-    python mergekit_cli_gradio.py passthrough --model1 path/to/model1 --model2 path/to/model2 --layer_range1 0 32 --layer_range2 24 32
-    python mergekit_cli_gradio.py --gradio
+    python mergekit_cli_gradio.py merge config.yml ./output-model-directory
+    python mergekit_cli_gradio.py extract-lora finetuned_model base_model output_path --rank 8
+    python mergekit_cli_gradio.py gradio
 
 Customize this script by:
 1. Adding or modifying merge methods
@@ -30,192 +28,100 @@ import logging
 import yaml
 import gradio as gr
 from typing import List, Dict, Any
+import subprocess
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def run_slerp(model1: str, model2: str, t: float, base_model: str, output_path: str) -> str:
-    """Execute the SLERP merge method."""
-    config = {
-        "slices": [
-            {
-                "sources": [
-                    {"model": model1, "layer_range": [0, 32]},
-                    {"model": model2, "layer_range": [0, 32]}
-                ]
-            }
-        ],
-        "merge_method": "slerp",
-        "base_model": base_model,
-        "parameters": {"t": t},
-        "dtype": "bfloat16"
-    }
+def run_merge(config_path: str, output_path: str, cuda: bool, lazy_unpickle: bool, allow_crimes: bool) -> str:
+    """Execute the merge operation using mergekit-yaml."""
+    cmd = ["mergekit-yaml", config_path, output_path]
+    if cuda:
+        cmd.append("--cuda")
+    if lazy_unpickle:
+        cmd.append("--lazy-unpickle")
+    if allow_crimes:
+        cmd.append("--allow-crimes")
     
-    # Here you would typically call the mergekit library to perform the merge
-    # For demonstration, we'll just return the config as a string
-    return f"SLERP merge config:\n{yaml.dump(config)}"
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    return result.stdout if result.returncode == 0 else f"Error: {result.stderr}"
 
-def run_ties(models: List[str], densities: List[float], weights: List[float], base_model: str, output_path: str) -> str:
-    """Execute the TIES merge method."""
-    config = {
-        "models": [{"model": model, "parameters": {"density": d, "weight": w}} 
-                   for model, d, w in zip(models, densities, weights)],
-        "merge_method": "ties",
-        "base_model": base_model,
-        "parameters": {"normalize": True},
-        "dtype": "float16"
-    }
+def run_extract_lora(finetuned_model: str, base_model: str, output_path: str, rank: int, no_lazy_unpickle: bool) -> str:
+    """Execute the LoRA extraction operation using mergekit-extract-lora."""
+    cmd = ["mergekit-extract-lora", finetuned_model, base_model, output_path, f"--rank={rank}"]
+    if no_lazy_unpickle:
+        cmd.append("--no-lazy-unpickle")
     
-    return f"TIES merge config:\n{yaml.dump(config)}"
-
-def run_dare(models: List[str], densities: List[float], weights: List[float], base_model: str, output_path: str, use_ties: bool) -> str:
-    """Execute the DARE merge method."""
-    config = {
-        "models": [{"model": model, "parameters": {"density": d, "weight": w}} 
-                   for model, d, w in zip(models, densities, weights)],
-        "merge_method": "dare_ties" if use_ties else "dare_linear",
-        "base_model": base_model,
-        "parameters": {"int8_mask": True},
-        "dtype": "bfloat16"
-    }
-    
-    return f"DARE merge config:\n{yaml.dump(config)}"
-
-def run_passthrough(model1: str, model2: str, layer_range1: List[int], layer_range2: List[int], output_path: str) -> str:
-    """Execute the Passthrough merge method."""
-    config = {
-        "slices": [
-            {"sources": [{"model": model1, "layer_range": layer_range1}]},
-            {"sources": [{"model": model2, "layer_range": layer_range2}]}
-        ],
-        "merge_method": "passthrough",
-        "dtype": "bfloat16"
-    }
-    
-    return f"Passthrough merge config:\n{yaml.dump(config)}"
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    return result.stdout if result.returncode == 0 else f"Error: {result.stderr}"
 
 def create_cli_parser():
     parser = argparse.ArgumentParser(description="🔧 MergeKit CLI and Gradio Interface")
-    parser.add_argument("--gradio", action="store_true", help="Run the Gradio interface")
-    subparsers = parser.add_subparsers(dest="command", help="Available merge methods")
+    subparsers = parser.add_subparsers(dest="command", help="Available commands")
     
-    # SLERP parser
-    slerp_parser = subparsers.add_parser("slerp", help="Execute SLERP merge")
-    slerp_parser.add_argument('--model1', type=str, required=True, help="Path to first model")
-    slerp_parser.add_argument('--model2', type=str, required=True, help="Path to second model")
-    slerp_parser.add_argument('--t', type=float, default=0.5, help="Interpolation factor")
-    slerp_parser.add_argument('--base_model', type=str, required=True, help="Path to base model")
-    slerp_parser.add_argument('--output', type=str, required=True, help="Output path for merged model")
+    # Merge parser
+    merge_parser = subparsers.add_parser("merge", help="Execute model merge")
+    merge_parser.add_argument('config', type=str, help="Path to YAML configuration file")
+    merge_parser.add_argument('output', type=str, help="Output path for merged model")
+    merge_parser.add_argument('--cuda', action='store_true', help="Use CUDA")
+    merge_parser.add_argument('--lazy-unpickle', action='store_true', help="Use lazy unpickling")
+    merge_parser.add_argument('--allow-crimes', action='store_true', help="Allow questionable operations")
 
-    # TIES parser
-    ties_parser = subparsers.add_parser("ties", help="Execute TIES merge")
-    ties_parser.add_argument('--models', nargs='+', required=True, help="Paths to models to merge")
-    ties_parser.add_argument('--densities', nargs='+', type=float, required=True, help="Density for each model")
-    ties_parser.add_argument('--weights', nargs='+', type=float, required=True, help="Weight for each model")
-    ties_parser.add_argument('--base_model', type=str, required=True, help="Path to base model")
-    ties_parser.add_argument('--output', type=str, required=True, help="Output path for merged model")
+    # Extract LoRA parser
+    extract_lora_parser = subparsers.add_parser("extract-lora", help="Extract LoRA")
+    extract_lora_parser.add_argument('finetuned_model', type=str, help="Finetuned model ID or path")
+    extract_lora_parser.add_argument('base_model', type=str, help="Base model ID or path")
+    extract_lora_parser.add_argument('output', type=str, help="Output path")
+    extract_lora_parser.add_argument('--rank', type=int, required=True, help="Desired rank")
+    extract_lora_parser.add_argument('--no-lazy-unpickle', action='store_true', help="Disable lazy unpickling")
 
-    # DARE parser
-    dare_parser = subparsers.add_parser("dare", help="Execute DARE merge")
-    dare_parser.add_argument('--models', nargs='+', required=True, help="Paths to models to merge")
-    dare_parser.add_argument('--densities', nargs='+', type=float, required=True, help="Density for each model")
-    dare_parser.add_argument('--weights', nargs='+', type=float, required=True, help="Weight for each model")
-    dare_parser.add_argument('--base_model', type=str, required=True, help="Path to base model")
-    dare_parser.add_argument('--output', type=str, required=True, help="Output path for merged model")
-    dare_parser.add_argument('--use_ties', action='store_true', help="Use TIES sign election")
-
-    # Passthrough parser
-    passthrough_parser = subparsers.add_parser("passthrough", help="Execute Passthrough merge")
-    passthrough_parser.add_argument('--model1', type=str, required=True, help="Path to first model")
-    passthrough_parser.add_argument('--model2', type=str, required=True, help="Path to second model")
-    passthrough_parser.add_argument('--layer_range1', nargs=2, type=int, required=True, help="Layer range for first model")
-    passthrough_parser.add_argument('--layer_range2', nargs=2, type=int, required=True, help="Layer range for second model")
-    passthrough_parser.add_argument('--output', type=str, required=True, help="Output path for merged model")
+    # Gradio parser
+    parser.add_argument("--gradio", action="store_true", help="Run the Gradio interface")
 
     return parser
 
 def create_gradio_interface():
     with gr.Blocks() as interface:
-        gr.Markdown("# MergeKit Model Merger")
+        gr.Markdown("# MergeKit Model Merger and LoRA Extractor")
         
-        with gr.Tab("SLERP"):
-            slerp_model1 = gr.Textbox(label="Model 1 Path")
-            slerp_model2 = gr.Textbox(label="Model 2 Path")
-            slerp_t = gr.Slider(minimum=0, maximum=1, value=0.5, label="Interpolation Factor (t)")
-            slerp_base_model = gr.Textbox(label="Base Model Path")
-            slerp_output = gr.Textbox(label="Output Path")
-            slerp_button = gr.Button("Run SLERP Merge")
-            slerp_result = gr.Textbox(label="Merge Config")
+        with gr.Tab("Merge Models"):
+            config_file = gr.File(label="Configuration YAML")
+            output_path = gr.Textbox(label="Output Path")
+            cuda_checkbox = gr.Checkbox(label="Use CUDA")
+            lazy_unpickle_checkbox = gr.Checkbox(label="Use Lazy Unpickling")
+            allow_crimes_checkbox = gr.Checkbox(label="Allow Questionable Operations")
+            merge_button = gr.Button("Run Merge")
+            merge_result = gr.Textbox(label="Merge Result")
             
-            slerp_button.click(
-                run_slerp,
-                inputs=[slerp_model1, slerp_model2, slerp_t, slerp_base_model, slerp_output],
-                outputs=slerp_result
+            def run_gradio_merge(config_file, output_path, cuda, lazy_unpickle, allow_crimes):
+                if config_file is None:
+                    return "Error: Please upload a configuration file."
+                with open(config_file.name, 'r') as f:
+                    config_content = f.read()
+                temp_config_path = "temp_config.yml"
+                with open(temp_config_path, 'w') as f:
+                    f.write(config_content)
+                return run_merge(temp_config_path, output_path, cuda, lazy_unpickle, allow_crimes)
+            
+            merge_button.click(
+                run_gradio_merge,
+                inputs=[config_file, output_path, cuda_checkbox, lazy_unpickle_checkbox, allow_crimes_checkbox],
+                outputs=merge_result
             )
         
-        with gr.Tab("TIES"):
-            ties_models = gr.Textbox(label="Model Paths (space-separated)")
-            ties_densities = gr.Textbox(label="Densities (space-separated)")
-            ties_weights = gr.Textbox(label="Weights (space-separated)")
-            ties_base_model = gr.Textbox(label="Base Model Path")
-            ties_output = gr.Textbox(label="Output Path")
-            ties_button = gr.Button("Run TIES Merge")
-            ties_result = gr.Textbox(label="Merge Config")
+        with gr.Tab("Extract LoRA"):
+            finetuned_model = gr.Textbox(label="Finetuned Model ID or Path")
+            base_model = gr.Textbox(label="Base Model ID or Path")
+            lora_output_path = gr.Textbox(label="Output Path")
+            rank = gr.Number(label="Desired Rank", precision=0)
+            no_lazy_unpickle_checkbox = gr.Checkbox(label="Disable Lazy Unpickling")
+            extract_lora_button = gr.Button("Extract LoRA")
+            extract_lora_result = gr.Textbox(label="Extraction Result")
             
-            ties_button.click(
-                lambda *args: run_ties(
-                    args[0].split(),
-                    [float(d) for d in args[1].split()],
-                    [float(w) for w in args[2].split()],
-                    args[3],
-                    args[4]
-                ),
-                inputs=[ties_models, ties_densities, ties_weights, ties_base_model, ties_output],
-                outputs=ties_result
-            )
-        
-        with gr.Tab("DARE"):
-            dare_models = gr.Textbox(label="Model Paths (space-separated)")
-            dare_densities = gr.Textbox(label="Densities (space-separated)")
-            dare_weights = gr.Textbox(label="Weights (space-separated)")
-            dare_base_model = gr.Textbox(label="Base Model Path")
-            dare_output = gr.Textbox(label="Output Path")
-            dare_use_ties = gr.Checkbox(label="Use TIES Sign Election")
-            dare_button = gr.Button("Run DARE Merge")
-            dare_result = gr.Textbox(label="Merge Config")
-            
-            dare_button.click(
-                lambda *args: run_dare(
-                    args[0].split(),
-                    [float(d) for d in args[1].split()],
-                    [float(w) for w in args[2].split()],
-                    args[3],
-                    args[4],
-                    args[5]
-                ),
-                inputs=[dare_models, dare_densities, dare_weights, dare_base_model, dare_output, dare_use_ties],
-                outputs=dare_result
-            )
-        
-        with gr.Tab("Passthrough"):
-            passthrough_model1 = gr.Textbox(label="Model 1 Path")
-            passthrough_model2 = gr.Textbox(label="Model 2 Path")
-            passthrough_layer_range1 = gr.Textbox(label="Layer Range for Model 1 (start end)")
-            passthrough_layer_range2 = gr.Textbox(label="Layer Range for Model 2 (start end)")
-            passthrough_output = gr.Textbox(label="Output Path")
-            passthrough_button = gr.Button("Run Passthrough Merge")
-            passthrough_result = gr.Textbox(label="Merge Config")
-            
-            passthrough_button.click(
-                lambda *args: run_passthrough(
-                    args[0],
-                    args[1],
-                    [int(lr) for lr in args[2].split()],
-                    [int(lr) for lr in args[3].split()],
-                    args[4]
-                ),
-                inputs=[passthrough_model1, passthrough_model2, passthrough_layer_range1, passthrough_layer_range2, passthrough_output],
-                outputs=passthrough_result
+            extract_lora_button.click(
+                run_extract_lora,
+                inputs=[finetuned_model, base_model, lora_output_path, rank, no_lazy_unpickle_checkbox],
+                outputs=extract_lora_result
             )
 
     return interface
@@ -228,14 +134,10 @@ if __name__ == "__main__":
         interface = create_gradio_interface()
         interface.launch()
     else:
-        if args.command == "slerp":
-            result = run_slerp(args.model1, args.model2, args.t, args.base_model, args.output)
-        elif args.command == "ties":
-            result = run_ties(args.models, args.densities, args.weights, args.base_model, args.output)
-        elif args.command == "dare":
-            result = run_dare(args.models, args.densities, args.weights, args.base_model, args.output, args.use_ties)
-        elif args.command == "passthrough":
-            result = run_passthrough(args.model1, args.model2, args.layer_range1, args.layer_range2, args.output)
+        if args.command == "merge":
+            result = run_merge(args.config, args.output, args.cuda, args.lazy_unpickle, args.allow_crimes)
+        elif args.command == "extract-lora":
+            result = run_extract_lora(args.finetuned_model, args.base_model, args.output, args.rank, args.no_lazy_unpickle)
         else:
             parser.print_help()
             exit(1)
